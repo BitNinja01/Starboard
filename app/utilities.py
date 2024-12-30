@@ -29,6 +29,48 @@ class SB_ASCII:
 
 class SB_FILES:
 
+    def parse_movie_name(movie_path, get_resolution=False, get_bitrate=False, get_dynamic_range=False):
+
+        log(1, f"Parsing file name : {movie_path}")
+
+        # Get just the folder name of the full movie path
+        folder_name = movie_path.rpartition("\\")[2]
+        log(0, f"Folder: {folder_name}")
+
+        # Get the year of the movie from it's file name
+        movie_year = SB_FILES.find_video_year_from_name(folder_name)
+        log(0, f"Year : {movie_year}")
+
+        # Get the front of our string
+        name_front = folder_name.rpartition(str(movie_year))[0]
+        log(0, f"Name Front : {name_front}")
+
+        # Get the back of our string
+        name_back = folder_name.rpartition(str(movie_year))[1]
+        log(0, f"Name Back : {name_back}")
+
+        # Combine the front and back
+        base_name = f"{name_front}{name_back}"
+        log(0, f"Front + Back : {base_name}")
+
+        # Replace any periods with spaces
+        base_name = base_name.replace(".", " ")
+        log(0, f"Replaced '.' : {base_name}")
+
+        # Fix any 'vs' in our title
+        base_name = base_name.replace(" vs ", " vs.")
+        log(0, f"VS fix : {base_name}")
+
+        # Remove and re-add the () to the year
+        base_name = base_name.replace("(", "")
+        base_name = base_name.replace(")", "")
+        base_name = base_name.replace(str(movie_year), f"({str(movie_year)})")
+        log(0, f"Fix () : {base_name}")
+
+        # SB_FILES.rename_files(full_movie_path, f"{folder_name}\\{final_name}")
+
+        return base_name
+
     def fix_base_movie_name(full_movie_path):
         # Get the movie extension
         movie_extension = full_movie_path[-4:]
@@ -127,7 +169,9 @@ class SB_FILES:
         current_year = datetime.now().year
         years_list = []
 
-        for i in range(1888, current_year + 1):
+        # current_year + 1
+
+        for i in range(1888, 2100):
             years_list.append(i)
 
         return years_list

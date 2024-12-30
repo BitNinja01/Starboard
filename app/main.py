@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # Step 3: Create the main window
     log(1, f"Creating main window...")
     window = SB_Main_Window()
-    window.show()
+    window.showMaximized()
 
     # Step 4: Start the application's event loop
     log(1, f"Starting program...")
