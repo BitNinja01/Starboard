@@ -11,6 +11,17 @@ import shutil
 zazzle.ZZ_Init.configure_logger(file_name="starboard")
 log = zazzle.ZZ_Logging.log
 
+class SB_EXECUTE:
+    def get_movie_folders(input_library_path):
+        movie_folders = SB_FILES.get_files_in_directory(input_library_path)
+
+        # Separate folders and videos in the main input folder
+        main_folder_video_files = [item for item in movie_folders if item.endswith((".mkv", ".mp4"))]
+        movie_folders = [item for item in movie_folders if not item.endswith((".mkv", ".mp4"))]
+
+        log(2, f"{movie_folders}")
+        return movie_folders
+
 class SB_ASCII:
     def print_intro_consol_blurb(text, font):
         font = Figlet(font=f"{font}")
@@ -25,8 +36,8 @@ class SB_FILES:
 
         file_name = full_movie_path.rpartition("\\")[-1]
         folder_name = full_movie_path.rpartition("\\")[0]
-        log(1, f"Movie : {file_name}")
-        log(1, f"Folder: {folder_name}")
+        log(0, f"Folder: {folder_name}")
+        log(0, f"Movie : {file_name}")
 
         # Get the year of the movie from it's file name
         movie_year = SB_FILES.find_video_year_from_name(file_name)
@@ -112,10 +123,11 @@ class SB_FILES:
 
     # Get a list of years from the first movie ever released to the current year
     def create_list_of_years():
+        log(1, f"Creating list of years from 1888 - {datetime.now().year}")
         current_year = datetime.now().year
         years_list = []
 
-        for i in range(1888, current_year):
+        for i in range(1888, current_year + 1):
             years_list.append(i)
 
         return years_list
@@ -149,6 +161,8 @@ class SB_FILES:
 
     def find_video_year_from_name(video_name):
         years = SB_FILES.create_list_of_years()
+
+        log(1, f"Finding year for : {video_name}")
 
         # Find the year as long as it doesn't equal 1080 or 2160
         for i in years:
@@ -220,7 +234,7 @@ class SB_FILES:
         SB_FILES.rename_files(file_path, new_name)
 
     def get_files_in_directory(directory):
-        log(1, f"Getting all folders in directory: {directory}...")
+        log(1, f"Getting all files in directory: {directory}...")
         file_names = os.listdir(directory)
         log(2, f"{file_names}")
 

@@ -15,12 +15,15 @@ if __name__ == "__main__":
     SB_ASCII.print_intro_consol_blurb(text="STARBOARD", font="doom")
     print()
 
+    log(1, f"Creating application...")
     # Step 2: Create the application object
     app = QApplication([])
 
     # Step 3: Create the main window
+    log(1, f"Creating main window...")
     window = SB_Main_Window()
     window.show()
 
     # Step 4: Start the application's event loop
+    log(1, f"Starting program...")
     app.exec()
