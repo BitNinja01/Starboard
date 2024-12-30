@@ -101,17 +101,17 @@ class SB_Main_Window(QWidget):
             # Clear any existing items from our list
             self.list_widget_a.clear()
 
-            # Get all the movie folder in our input directory
+            # Get all the movie folders in our input directory
             movie_folders = SB_EXECUTE.get_movie_folders(self.directory_path)
 
-            # Get the updated names for all the movie folders we found
-            parsed_movies = []
+            # Create a dictionary with parsed movie names and their original path
+            parsed_movie_folder_dict = {}
             for movie in movie_folders:
                 name = SB_FILES.parse_movie_name(movie)
-                parsed_movies.append(name)
+                parsed_movie_folder_dict[name] = movie
 
             # Add the updated names to the UI
-            self.list_widget_a.addItems(parsed_movies)
+            self.list_widget_a.addItems(parsed_movie_folder_dict.keys())
 
             # Populate the UI with all the movie folders we found
             """if movie_folders:
