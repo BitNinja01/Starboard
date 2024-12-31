@@ -87,8 +87,8 @@ class SB_Main_Window(QWidget):
             self.group_box_layout_04 = QHBoxLayout()
 
             # Create a button to scan the input directory and generate the form
-            self.generate_button = QPushButton("Scan Directory")
-            self.generate_button.clicked.connect(self.generate_file_list)
+            self.generate_button = QPushButton("Update Names")
+            # self.generate_button.clicked.connect(self.generate_file_list)
             self.group_box_layout_04.addWidget(self.generate_button)
 
             # Create a button to rename all the scanned files
@@ -116,73 +116,70 @@ class SB_Main_Window(QWidget):
             log(4, f"CRITICAL GUI ERROR")
 
     def generate_file_list(self):
-
         try:
             log(1, f"Generating file list...")
-
-            # Clear any existing items from our lists
             self.list_widget_a.clear()
             self.list_widget_b.clear()
 
-            # Get all the movie folders in our input directory
+            if not hasattr(self, 'directory_path') or not os.path.exists(self.directory_path):
+                log(3, f"Invalid or missing directory path: {self.directory_path}")
+                return
+
             movie_folders = SB_EXECUTE.get_movie_folders(self.directory_path)
+            if not movie_folders:
+                log(3, "No movie folders found.")
+                return
 
-            # Create a dictionary with parsed movie names and their original path
-            self.parsed_movie_folder_dict = {}
-            for movie in movie_folders:
-                name = SB_FILES.parse_movie_name(movie)
-                self.parsed_movie_folder_dict[name] = movie
+            self.parsed_movie_folder_dict = {
+                SB_FILES.parse_movie_name(movie): movie for movie in movie_folders
+            }
+            self.parsed_video_dict = {
+                movie: {} for movie in self.parsed_movie_folder_dict
+            }
 
-            # Parse all the video names in each movie folder and add them to a dictionary
-            # {'parsed_movie_name' : {'parsed_video_name' : 'video_path'}}
-            self.parsed_video_dict = {}
-            for movie in self.parsed_movie_folder_dict:
-                # Create the dictionary for all video files
-                self.parsed_video_dict[movie] = {}
+            for movie, path in self.parsed_movie_folder_dict.items():
+                video_files = SB_FILES.get_files_in_directory(path)
+                video_files = [v for v in video_files if v.endswith(('.mkv', '.mp4'))]
 
-                # Get all video files in the current directory
-                video_files = SB_FILES.get_files_in_directory(self.parsed_movie_folder_dict[movie])
-
-                # Get rid of any files that don't have a video extension
-                only_videos = []
                 for video in video_files:
-                    if video.endswith(".mkv") or video.endswith(".mp4"):
-                        only_videos.append(video)
-                        log(0, f"Video       : {video}")
-                    else:
-                        log(0, f"Not a video : {video}")
-
-                # Parse all the video names
-                log(0, f"Resolution    : {self.check_resolution.isChecked()}")
-                log(0, f"Bitrate       : {self.check_video_bitrate.isChecked()}")
-                log(0, f"Dynamic Range : {self.check_HDR.isChecked()}")
-                for video in only_videos:
-                    parsed_video_name = SB_FILES.parse_video_name(video_path=video, parsed_movie_name=movie,
-                                                                  get_resolution=self.check_resolution.isChecked(),
-                                                                  get_bitrate=self.check_video_bitrate.isChecked(),
-                                                                  get_dynamic_range=self.check_HDR.isChecked())
+                    parsed_video_name = SB_FILES.parse_video_name(
+                        video_path=video, parsed_movie_name=movie,
+                        get_resolution=self.check_resolution.isChecked(),
+                        get_video_bitrate=self.check_video_bitrate.isChecked(),
+                        get_dynamic_range=self.check_HDR.isChecked(),
+                        get_audio_bitrate=self.check_audio_bitrate.isChecked(),
+                        get_audio_codec=self.check_audio_codec.isChecked(),
+                        get_video_framerate=self.check_video_framerate.isChecked(),
+                        get_video_colorspace=self.check_video_colorspace.isChecked()
+                    )
                     self.parsed_video_dict[movie][parsed_video_name] = video
 
-            # Add the updated names to the UI ==========================================================================
-            # Figure out which widget_a item is selected, and display those items
-            self.list_widget_a.addItems(self.parsed_movie_folder_dict.keys())
+            if not self.parsed_movie_folder_dict:
+                log(3, "No parsed movie folders to display.")
+                return
 
-            # This automatically updates widget_list_b so we don't need to call an update manually
+            self.list_widget_a.addItems(self.parsed_movie_folder_dict.keys())
             self.list_widget_a.setCurrentRow(0)
 
-        except:
-            log(4, f"CRITICAL ERROR")
+        except Exception as e:
+            log(4, f"CRITICAL ERROR: {e}")
 
     def update_widget_b_items(self):
         log(1, f"Active movie changed. Updating lists...")
-
-        # Clear any existing items from our lists
         self.list_widget_b.clear()
 
-        log(0, f"Active movie : {self.list_widget_a.currentItem().text()}")
-        log(0, f"Dict : {self.parsed_video_dict}")
+        current_item = self.list_widget_a.currentItem()
+        if not current_item:
+            log(3, "No active movie selected.")
+            return
 
-        self.list_widget_b.addItems(self.parsed_video_dict[self.list_widget_a.currentItem().text()].keys())
+        movie_name = current_item.text()
+        if movie_name not in self.parsed_video_dict:
+            log(3, f"Movie '{movie_name}' not found in parsed_video_dict.")
+            return
+
+        log(0, f"Active movie: {movie_name}")
+        self.list_widget_b.addItems(self.parsed_video_dict[movie_name].keys())
         self.list_widget_b.setCurrentRow(0)
 
     def rename_files(self):
@@ -194,6 +191,7 @@ class SB_Main_Window(QWidget):
         if self.directory_path:
             # Update the label with the selected file path
             self.directory_label.setText(f"{self.directory_path}")
+            self.generate_file_list()
 
     def modern_stylesheet(app: QApplication):
         """
