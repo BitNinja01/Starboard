@@ -6,6 +6,7 @@ import json
 import ffmpeg
 from datetime import datetime
 import shutil
+import imdb
 
 # Initialize logging
 zazzle.ZZ_Init.configure_logger(file_name="starboard")
@@ -73,7 +74,10 @@ class SB_FILES:
 
     def parse_video_name(video_path, parsed_movie_name=None, get_resolution=False, get_video_bitrate=False,
                          get_audio_codec=False, get_dynamic_range=False, get_video_framerate=False,
-                         get_video_colorspace=False):
+                         get_video_colorspace=False, get_imdb_id=False):
+
+        metadata = SB_PROBE.get_video_metadata(video_path)
+        log(0, f"Metadata : {metadata}")
 
         # Get the movie extension
         movie_extension = video_path[-4:]
@@ -119,6 +123,11 @@ class SB_FILES:
         base_name = base_name.replace(str(movie_year), f"({str(movie_year)})")
         log(0, f"Fix () : {base_name}")
         parsed_video_name = base_name
+
+        # Get the IMDB ID
+        if get_imdb_id:
+            imdb_tag = SB_IMDB.imdb_get_id_from_title(parsed_video_name)
+            log(0, f"IMDB ID : {id}")
 
         # Make a list of details to add to the video name
         details = []
@@ -168,6 +177,10 @@ class SB_FILES:
         if details:
             for detail in details:
                 parsed_video_name = f"{parsed_video_name}{detail}"
+
+        # Add IMDB tag to name
+        if get_imdb_id:
+            parsed_video_name = parsed_video_name + " {imdb -" + imdb_tag + "}"
 
         # If we detected an edition, add it to the end before the extension
         if edition:
@@ -534,6 +547,48 @@ class SB_PROBE:
             print(f"Error: {e}")
             return None
 
+    def get_video_metadata(file_path):
+        try:
+            if not os.path.exists(file_path):
+                log(3, f"Error: File not found at {file_path}")
+                return None
+
+            # Run ffprobe to extract tags
+            result = subprocess.run(
+                ['ffprobe', '-v', 'error', '-show_entries', 'format=tags', '-of', 'json', file_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            # Parse the JSON output
+            metadata = json.loads(result.stdout)
+            if 'format' in metadata and 'tags' in metadata['format']:
+                return metadata['format']['tags']
+            else:
+                log(3, "No tags found in the file.")
+                return None
+        except:
+            log(4, f"CRITICAL ERROR")
+            return None
+
+class SB_IMDB:
+    def imdb_get_id_from_title(title):
+        ia = imdb.Cinemagoer()
+        movies = ia.search_movie(title)
+        if movies:
+            movie = movies[0]  # Get the first result
+            log(0, f"Movie ID : {movie.movieID}")
+            return movie.movieID
+        else:
+            log(3, f"No results found for '{title}'")
+        return None
+
+    def imdb_get_year_from_id(id):
+        pass
+
+    def imdb_get_description_from_id(id):
+        pass
 
 class SB_VIDEO:
     def create_optimized_video_sdr_to_sdr(input_file, target_bitrate, bitrate_buffer):

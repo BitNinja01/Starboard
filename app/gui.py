@@ -73,12 +73,14 @@ class SB_Main_Window(QWidget):
             self.check_audio_codec = QCheckBox("Audio Codec")
             self.check_video_framerate = QCheckBox("Framerate")
             self.check_video_colorspace = QCheckBox("Colorspace")
+            self.check_imdb_id = QCheckBox("IMDB ID")
             self.group_box_layout_02_c.addWidget(self.check_resolution)
             self.group_box_layout_02_c.addWidget(self.check_HDR)
             self.group_box_layout_02_c.addWidget(self.check_video_bitrate)
             self.group_box_layout_02_c.addWidget(self.check_audio_codec)
             self.group_box_layout_02_c.addWidget(self.check_video_framerate)
             self.group_box_layout_02_c.addWidget(self.check_video_colorspace)
+            self.group_box_layout_02_c.addWidget(self.check_imdb_id)
 
             # Make "Actions" box =======================================================================================
             self.group_box_04 = QGroupBox("Actions")
@@ -147,7 +149,8 @@ class SB_Main_Window(QWidget):
                         get_dynamic_range=self.check_HDR.isChecked(),
                         get_audio_codec=self.check_audio_codec.isChecked(),
                         get_video_framerate=self.check_video_framerate.isChecked(),
-                        get_video_colorspace=self.check_video_colorspace.isChecked()
+                        get_video_colorspace=self.check_video_colorspace.isChecked(),
+                        get_imdb_id=self.check_imdb_id.isChecked()
                     )
                     self.parsed_video_dict[movie][parsed_video_name] = video
 
