@@ -71,14 +71,15 @@ class SB_FILES:
 
         return base_name
 
-    def parse_video_name(video_path, parsed_movie_name=None, get_resolution=False, get_bitrate=False,
-                         get_dynamic_range=False):
+    def parse_video_name(video_path, parsed_movie_name=None, get_resolution=False, get_video_bitrate=False,
+                         get_audio_bitrate=False, get_audio_codec=False, get_dynamic_range=False,
+                         get_video_framerate=False, get_video_colorspace=False):
 
         # Get the movie extension
         movie_extension = video_path[-4:]
         log(0, f"Extension : {movie_extension}")
 
-        # If we didn't pass a parsed movie name, then we need to parse it
+        # If we didn't pass a parsed movie name, then we need to parse it from the file path
         if parsed_movie_name == None:
             file_name = video_path.rpartition("\\")[-1]
             folder_name = video_path.rpartition("\\")[0]
@@ -142,13 +143,30 @@ class SB_FILES:
                 log(0, f"SDR")
                 details.append(f".SDR")
 
-        # Add the bitrate
-        if get_bitrate:
+        # Add the video bitrate
+        if get_video_bitrate:
             bitrate = SB_VIDEO.get_video_bitrate_ffmpeg(video_path)
             mbps = SB_VIDEO.convert_bitrate_to_mbps(bitrate)
             log(0, f"Bitrate : {bitrate}Mbps")
             details.append(f".{bitrate}Mbps")
 
+        # Add the audio bitrate
+        if get_audio_bitrate:
+            log(2, f"GET_AUDIO_BITRATE NOT YET SUPPORTED")
+
+        # Add the audio codec
+        if get_audio_codec:
+            log(2, f"GET_AUDIO_CODEC NOT YET SUPPORTED")
+
+        # Add the video framerate
+        if get_video_framerate:
+            log(2, f"GET_VIDEO_FRAMERATE NOT YET SUPPORTED")
+
+        # Get the video colorspace
+        if get_video_colorspace:
+            log(2, f"GET_VIDEO_COLORSPACE NOT YET SUPPORTED")
+
+        # If we want to add any details to the end of our file names, add them
         if details:
             for detail in details:
                 parsed_video_name = f"{parsed_video_name}{detail}"

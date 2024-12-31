@@ -69,10 +69,18 @@ class SB_Main_Window(QWidget):
             # Checkboxes
             self.check_resolution = QCheckBox("Resolution")
             self.check_HDR = QCheckBox("Dynamic Range")
-            self.check_bitrate = QCheckBox("Bitrate")
+            self.check_video_bitrate = QCheckBox("Video Bitrate")
+            self.check_audio_bitrate = QCheckBox("Audio Bitrate")
+            self.check_audio_codec = QCheckBox("Audio Codec")
+            self.check_video_framerate = QCheckBox("Framerate")
+            self.check_video_colorspace = QCheckBox("Colorspace")
             self.group_box_layout_02_c.addWidget(self.check_resolution)
             self.group_box_layout_02_c.addWidget(self.check_HDR)
-            self.group_box_layout_02_c.addWidget(self.check_bitrate)
+            self.group_box_layout_02_c.addWidget(self.check_video_bitrate)
+            self.group_box_layout_02_c.addWidget(self.check_audio_bitrate)
+            self.group_box_layout_02_c.addWidget(self.check_audio_codec)
+            self.group_box_layout_02_c.addWidget(self.check_video_framerate)
+            self.group_box_layout_02_c.addWidget(self.check_video_colorspace)
 
             # Make "Actions" box =======================================================================================
             self.group_box_04 = QGroupBox("Actions")
@@ -146,12 +154,12 @@ class SB_Main_Window(QWidget):
 
                 # Parse all the video names
                 log(0, f"Resolution    : {self.check_resolution.isChecked()}")
-                log(0, f"Bitrate       : {self.check_bitrate.isChecked()}")
+                log(0, f"Bitrate       : {self.check_video_bitrate.isChecked()}")
                 log(0, f"Dynamic Range : {self.check_HDR.isChecked()}")
                 for video in only_videos:
                     parsed_video_name = SB_FILES.parse_video_name(video_path=video, parsed_movie_name=movie,
                                                                   get_resolution=self.check_resolution.isChecked(),
-                                                                  get_bitrate=self.check_bitrate.isChecked(),
+                                                                  get_bitrate=self.check_video_bitrate.isChecked(),
                                                                   get_dynamic_range=self.check_HDR.isChecked())
                     self.parsed_video_dict[movie][parsed_video_name] = video
 
