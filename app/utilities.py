@@ -72,8 +72,8 @@ class SB_FILES:
         return base_name
 
     def parse_video_name(video_path, parsed_movie_name=None, get_resolution=False, get_video_bitrate=False,
-                         get_audio_bitrate=False, get_audio_codec=False, get_dynamic_range=False,
-                         get_video_framerate=False, get_video_colorspace=False):
+                         get_audio_codec=False, get_dynamic_range=False, get_video_framerate=False,
+                         get_video_colorspace=False):
 
         # Get the movie extension
         movie_extension = video_path[-4:]
@@ -126,17 +126,15 @@ class SB_FILES:
 
         # Add video width and height
         if get_resolution:
-            media_dimensions = SB_PROBE.get_video_dimensions(video_path)
-            resolution = media_dimensions[0] / 1.77777
-            resolution = int(resolution)
+            resolution = SB_PROBE.get_video_resolution(video_path)
 
-            log(0, f"Resolution : {media_dimensions}")
+            log(0, f"Resolution : {resolution}")
             details.append(f".{resolution}")
 
         # Add HDR status
         if get_dynamic_range:
-            dynamic_resolution = SB_VIDEO.video_hdr_check(video_path)
-            if dynamic_resolution == True:
+            dynamic_range = SB_PROBE.get_video_hdr_status(video_path)
+            if dynamic_range == True:
                 log(0, f"HDR")
                 details.append(f".HDR")
             else:
@@ -145,27 +143,27 @@ class SB_FILES:
 
         # Add the video bitrate
         if get_video_bitrate:
-            bitrate = SB_VIDEO.get_video_bitrate_ffmpeg(video_path)
-            mbps = SB_VIDEO.convert_bitrate_to_mbps(bitrate)
+            bitrate = SB_PROBE.get_video_bitrate(video_path)
+            mbps = SB_PROBE.convert_bitrate_to_mbps(bitrate)
             log(0, f"Bitrate : {bitrate}Mbps")
             mbps = str(mbps).replace(".", ",")
             details.append(f".{mbps}Mbps")
 
-        # Add the audio bitrate
-        if get_audio_bitrate:
-            log(2, f"GET_AUDIO_BITRATE NOT YET SUPPORTED")
-
         # Add the audio codec
         if get_audio_codec:
-            log(2, f"GET_AUDIO_CODEC NOT YET SUPPORTED")
+            audio_codec = SB_PROBE.get_audio_codec(video_path)
+            details.append(f".{audio_codec}")
 
         # Add the video framerate
         if get_video_framerate:
-            log(2, f"GET_VIDEO_FRAMERATE NOT YET SUPPORTED")
+            video_framerate = round(SB_PROBE.get_video_fps(video_path), 2)
+            video_framerate = str(video_framerate).replace(".", ",")
+            details.append(f".{video_framerate}fps")
 
         # Get the video colorspace
         if get_video_colorspace:
-            log(2, f"GET_VIDEO_COLORSPACE NOT YET SUPPORTED")
+            video_colorspace = SB_PROBE.get_video_colorspace(video_path)
+            details.append(f".{video_colorspace}")
 
         # If we want to add any details to the end of our file names, add them
         if details:
@@ -179,28 +177,6 @@ class SB_FILES:
         # SB_FILES.rename_files(full_movie_path, f"{folder_name}\\{final_name}")
 
         return parsed_video_name
-
-    def fix_base_show_name():
-        pass
-
-    def add_media_data_to_filename(full_file_path):
-
-        # Get video HDR status
-        HDR = SB_VIDEO.video_hdr_check(full_file_path)
-
-        # Get bitrate
-        bitrate = SB_VIDEO.get_video_bitrate_ffmpeg(full_file_path)
-
-    def get_video_bitrate_from_file_name(video_path):
-        log(1, f"Getting bitrate for : {video_path}")
-
-        # Split the string until we're left with the Mbps, and then convert it to a float
-        left_string = video_path.rpartition("Mbps")[0]
-        mbps = left_string.rpartition(".")[-1]
-        mbps = mbps.replace(",", ".")
-        mbps = float(mbps)
-
-        log(0, f"Bitrate : {mbps}Mbps")
 
     # Get a list of years from the first movie ever released to the current year
     def create_list_of_years():
@@ -241,7 +217,6 @@ class SB_FILES:
         for string in strings_list:
             possible_strings_no_spaces.append(f"{string}{number}")
 
-
     def find_video_year_from_name(video_name):
         years = SB_FILES.create_list_of_years()
 
@@ -255,9 +230,6 @@ class SB_FILES:
                     break
 
         return year
-
-    def fix_downloaded_names(download_directory):
-        pass
 
     def rename_files(old_name, new_name):
         log(1, f"Renaming : {old_name} >>> {new_name}")
@@ -304,8 +276,8 @@ class SB_FILES:
         log(1, f"Adding namespace to {file_path}")
 
         log(0, f"Getting bitrate...")
-        bitrate = SB_VIDEO.get_video_bitrate_ffmpeg(file_path)
-        mbps = SB_VIDEO.convert_bitrate_to_mbps(bitrate_bps=bitrate)
+        bitrate = SB_PROBE.get_video_bitrate(file_path)
+        mbps = SB_PROBE.convert_bitrate_to_mbps(bitrate_bps=bitrate)
         log(0, f"Bitrate: {mbps}")
 
         extension = file_path[-4:]
@@ -387,8 +359,13 @@ class SB_PROBE:
             print(f"Error: {e}")
             return None
 
-class SB_VIDEO:
-    def get_video_bitrate_ffmpeg(file_path):
+    def get_video_resolution(video_path):
+        media_dimensions = SB_PROBE.get_video_dimensions(video_path)
+        resolution = media_dimensions[0] / 1.77777
+        resolution = int(resolution)
+        return resolution
+
+    def get_video_bitrate(file_path):
         try:
             # Run ffprobe to get metadata as JSON
             result = subprocess.run(
@@ -406,7 +383,13 @@ class SB_VIDEO:
             print(f"Error: {e}")
             return None
 
-    def video_hdr_check(file_path):
+    def convert_bitrate_to_mbps(bitrate_bps):
+        if bitrate_bps is None:
+            return None
+        # Divide by 1,000,000 to get Mbps
+        return round(bitrate_bps / 1_000_000, 2)
+
+    def get_video_hdr_status(file_path):
         try:
             # Run ffprobe to extract color metadata
             result = subprocess.run(
@@ -444,12 +427,80 @@ class SB_VIDEO:
             print(f"Error: {e}")
             return False
 
-    def convert_bitrate_to_mbps(bitrate_bps):
-        if bitrate_bps is None:
+    def get_audio_bitrate(file_path):
+        try:
+            # Run ffprobe to get audio bitrate
+            result = subprocess.run(
+                ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries',
+                 'stream=bit_rate', '-of', 'json', file_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            # Parse the JSON output
+            metadata = json.loads(result.stdout)
+            return int(metadata['streams'][0]['bit_rate']) if metadata.get('streams') else None
+        except Exception as e:
+            print(f"Error: {e}")
             return None
-        # Divide by 1,000,000 to get Mbps
-        return round(bitrate_bps / 1_000_000, 2)
 
+    def get_audio_codec(file_path):
+        try:
+            # Run ffprobe to get audio codec
+            result = subprocess.run(
+                ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries',
+                 'stream=codec_name', '-of', 'json', file_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            # Parse the JSON output
+            metadata = json.loads(result.stdout)
+            return metadata['streams'][0]['codec_name'] if metadata.get('streams') else None
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+    def get_video_fps(file_path):
+        try:
+            # Run ffprobe to get video frame rate
+            result = subprocess.run(
+                ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries',
+                 'stream=avg_frame_rate', '-of', 'json', file_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            # Parse the JSON output
+            metadata = json.loads(result.stdout)
+            if metadata.get('streams'):
+                avg_frame_rate = metadata['streams'][0]['avg_frame_rate']
+                return eval(avg_frame_rate) if avg_frame_rate else None
+            return None
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+    def get_video_colorspace(file_path):
+        try:
+            # Run ffprobe to get video colorspace
+            result = subprocess.run(
+                ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries',
+                 'stream=color_space', '-of', 'json', file_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            # Parse the JSON output
+            metadata = json.loads(result.stdout)
+            return metadata['streams'][0]['color_space'] if metadata.get('streams') and 'color_space' in \
+                                                            metadata['streams'][0] else None
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+class SB_VIDEO:
     def create_optimized_video_sdr_to_sdr(input_file, target_bitrate, bitrate_buffer):
         log(1, f"Converting SDR video to SDR video...")
         log(0, f"Input file: {input_file}")
