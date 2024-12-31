@@ -148,7 +148,8 @@ class SB_FILES:
             bitrate = SB_VIDEO.get_video_bitrate_ffmpeg(video_path)
             mbps = SB_VIDEO.convert_bitrate_to_mbps(bitrate)
             log(0, f"Bitrate : {bitrate}Mbps")
-            details.append(f".{bitrate}Mbps")
+            mbps = str(mbps).replace(".", ",")
+            details.append(f".{mbps}Mbps")
 
         # Add the audio bitrate
         if get_audio_bitrate:
