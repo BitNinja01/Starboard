@@ -54,6 +54,7 @@ class SB_Main_Window(QWidget):
 
             # Create a QListWidget
             self.list_widget_a = QListWidget()
+            self.list_widget_a.currentItemChanged.connect(self.update_widget_b_items)
             self.list_widget_b = QListWidget()
             self.group_box_layout_02_a.addWidget(self.list_widget_a)
             self.group_box_layout_02_b.addWidget(self.list_widget_b)
@@ -98,40 +99,62 @@ class SB_Main_Window(QWidget):
         try:
             log(1, f"Generating file list...")
 
-            # Clear any existing items from our list
+            # Clear any existing items from our lists
             self.list_widget_a.clear()
+            self.list_widget_b.clear()
 
             # Get all the movie folders in our input directory
             movie_folders = SB_EXECUTE.get_movie_folders(self.directory_path)
 
             # Create a dictionary with parsed movie names and their original path
-            parsed_movie_folder_dict = {}
+            self.parsed_movie_folder_dict = {}
             for movie in movie_folders:
                 name = SB_FILES.parse_movie_name(movie)
-                parsed_movie_folder_dict[name] = movie
+                self.parsed_movie_folder_dict[name] = movie
 
-            # Add the updated names to the UI
-            self.list_widget_a.addItems(parsed_movie_folder_dict.keys())
+            # Parse all the video names in each movie folder and add them to a dictionary
+            # {'parsed_movie_name' : {'parsed_video_name' : 'video_path'}}
+            self.parsed_video_dict = {}
+            for movie in self.parsed_movie_folder_dict:
+                # Create the dictionary for all video files
+                self.parsed_video_dict[movie] = {}
 
-            # Populate the UI with all the movie folders we found
-            """if movie_folders:
-                log(0, f"{len(movie_folders)} movie folder found!")
-                for movie in movie_folders:
-                    video_files = SB_FILES.get_files_in_directory(os.path.join(self.directory_entry.text(), movie))
+                # Get all video files in the current directory
+                video_files = SB_FILES.get_files_in_directory(self.parsed_movie_folder_dict[movie])
 
-                    for video in video_files:
-                        log(0, f"Video file : {video}")
+                # Get rid of any files that don't have a video extension
+                for video in video_files:
+                    if video.endswith(".mkv") or video.endswith(".mp4"):
+                        log(0, f"Video : {video}")
+                    else:
+                        video_files.remove(video)
 
-                        # Get the names for the movie file
-                        base_name, detailed_name, final_name = SB_FILES.fix_base_movie_name(video)
+                # Parse all the video names
+                for video in video_files:
+                    parsed_video_name = SB_FILES.parse_video_name(video_path=video, parsed_movie_name=movie)
+                    self.parsed_video_dict[movie][parsed_video_name] = video
 
-                        log(1, f"{movie}")
-                        name_label = QLabel(f"{movie}")
-                        name_input = QLineEdit()
-                        name_input.setText(f"{movie}")
-                        self.form_layout.addRow(name_label, name_input)"""
+            # Add the updated names to the UI ==========================================================================
+            # Figure out which widget_a item is selected, and display those items
+            self.list_widget_a.addItems(self.parsed_movie_folder_dict.keys())
+            self.list_widget_a.setCurrentRow(0)
+
+            # We don't need to update list b here because self.list_widget_a.setCurrentRow(0) will do that
+
         except:
             log(4, f"CRITICAL ERROR")
+
+    def update_widget_b_items(self):
+        log(1, f"Active movie changed. Updating lists...")
+
+        # Clear any existing items from our lists
+        self.list_widget_b.clear()
+
+        log(0, f"Active movie : {self.list_widget_a.currentItem().text()}")
+        log(0, f"Dict : {self.parsed_video_dict}")
+
+        self.list_widget_b.addItems(self.parsed_video_dict[self.list_widget_a.currentItem().text()].keys())
+        self.list_widget_b.setCurrentRow(0)
 
     def rename_files(self):
         log(1, f"RENAME FILES")
