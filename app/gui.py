@@ -70,14 +70,12 @@ class SB_Main_Window(QWidget):
             self.check_resolution = QCheckBox("Resolution")
             self.check_HDR = QCheckBox("Dynamic Range")
             self.check_video_bitrate = QCheckBox("Video Bitrate")
-            self.check_audio_bitrate = QCheckBox("Audio Bitrate")
             self.check_audio_codec = QCheckBox("Audio Codec")
             self.check_video_framerate = QCheckBox("Framerate")
             self.check_video_colorspace = QCheckBox("Colorspace")
             self.group_box_layout_02_c.addWidget(self.check_resolution)
             self.group_box_layout_02_c.addWidget(self.check_HDR)
             self.group_box_layout_02_c.addWidget(self.check_video_bitrate)
-            self.group_box_layout_02_c.addWidget(self.check_audio_bitrate)
             self.group_box_layout_02_c.addWidget(self.check_audio_codec)
             self.group_box_layout_02_c.addWidget(self.check_video_framerate)
             self.group_box_layout_02_c.addWidget(self.check_video_colorspace)
@@ -147,7 +145,6 @@ class SB_Main_Window(QWidget):
                         get_resolution=self.check_resolution.isChecked(),
                         get_video_bitrate=self.check_video_bitrate.isChecked(),
                         get_dynamic_range=self.check_HDR.isChecked(),
-                        get_audio_bitrate=self.check_audio_bitrate.isChecked(),
                         get_audio_codec=self.check_audio_codec.isChecked(),
                         get_video_framerate=self.check_video_framerate.isChecked(),
                         get_video_colorspace=self.check_video_colorspace.isChecked()
