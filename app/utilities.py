@@ -11,6 +11,17 @@ import shutil
 zazzle.ZZ_Init.configure_logger(file_name="starboard")
 log = zazzle.ZZ_Logging.log
 
+class SB_EXECUTE:
+    def get_movie_folders(input_library_path):
+        movie_folders = SB_FILES.get_files_in_directory(input_library_path)
+
+        # Separate folders and videos in the main input folder
+        main_folder_video_files = [item for item in movie_folders if item.endswith((".mkv", ".mp4"))]
+        movie_folders = [item for item in movie_folders if not item.endswith((".mkv", ".mp4"))]
+
+        log(2, f"{movie_folders}")
+        return movie_folders
+
 class SB_ASCII:
     def print_intro_consol_blurb(text, font):
         font = Figlet(font=f"{font}")
@@ -18,26 +29,24 @@ class SB_ASCII:
 
 class SB_FILES:
 
-    def fix_base_movie_name(full_movie_path):
-        # Get the movie extension
-        movie_extension = full_movie_path[-4:]
-        log(0, f"Extension : {movie_extension}")
+    def parse_movie_name(movie_path):
 
-        file_name = full_movie_path.rpartition("\\")[-1]
-        folder_name = full_movie_path.rpartition("\\")[0]
-        log(1, f"Movie : {file_name}")
-        log(1, f"Folder: {folder_name}")
+        log(1, f"Parsing file name : {movie_path}")
+
+        # Get just the folder name of the full movie path
+        folder_name = movie_path.rpartition("\\")[2]
+        log(0, f"Folder: {folder_name}")
 
         # Get the year of the movie from it's file name
-        movie_year = SB_FILES.find_video_year_from_name(file_name)
+        movie_year = SB_FILES.find_video_year_from_name(folder_name)
         log(0, f"Year : {movie_year}")
 
         # Get the front of our string
-        name_front = file_name.rpartition(str(movie_year))[0]
+        name_front = folder_name.rpartition(str(movie_year))[0]
         log(0, f"Name Front : {name_front}")
 
         # Get the back of our string
-        name_back = file_name.rpartition(str(movie_year))[1]
+        name_back = folder_name.rpartition(str(movie_year))[1]
         log(0, f"Name Back : {name_back}")
 
         # Combine the front and back
@@ -58,35 +67,118 @@ class SB_FILES:
         base_name = base_name.replace(str(movie_year), f"({str(movie_year)})")
         log(0, f"Fix () : {base_name}")
 
+        # SB_FILES.rename_files(full_movie_path, f"{folder_name}\\{final_name}")
+
+        return base_name
+
+    def parse_video_name(video_path, parsed_movie_name=None, get_resolution=False, get_video_bitrate=False,
+                         get_audio_bitrate=False, get_audio_codec=False, get_dynamic_range=False,
+                         get_video_framerate=False, get_video_colorspace=False):
+
+        # Get the movie extension
+        movie_extension = video_path[-4:]
+        log(0, f"Extension : {movie_extension}")
+
+        # If we didn't pass a parsed movie name, then we need to parse it from the file path
+        if parsed_movie_name == None:
+            file_name = video_path.rpartition("\\")[-1]
+            folder_name = video_path.rpartition("\\")[0]
+            log(0, f"Folder: {folder_name}")
+            log(0, f"Movie : {file_name}")
+
+            # Get the year of the movie from it's file name
+            movie_year = SB_FILES.find_video_year_from_name(file_name)
+            log(0, f"Year : {movie_year}")
+
+            # Get the front of our string
+            name_front = file_name.rpartition(str(movie_year))[0]
+            log(0, f"Name Front : {name_front}")
+
+            # Get the back of our string
+            name_back = file_name.rpartition(str(movie_year))[1]
+            log(0, f"Name Back : {name_back}")
+
+            # Combine the front and back
+            base_name = f"{name_front}{name_back}"
+            log(0, f"Front + Back : {base_name}")
+
+            # Replace any periods with spaces
+            base_name = base_name.replace(".", " ")
+            log(0, f"Replaced '.' : {base_name}")
+
+            # Fix any 'vs' in our title
+            base_name = base_name.replace(" vs ", " vs.")
+            log(0, f"VS fix : {base_name}")
+
+            # Remove and re-add the () to the year
+            base_name = base_name.replace("(", "")
+            base_name = base_name.replace(")", "")
+            base_name = base_name.replace(str(movie_year), f"({str(movie_year)})")
+            log(0, f"Fix () : {base_name}")
+            parsed_video_name = base_name
+
+        # Use the parsed movie name as the base name for the video we're working on
+        else:
+            parsed_video_name = parsed_movie_name
+
+        # Make a list of details to add to the video name
+        details = []
+
         # Add video width and height
-        media_dimensions = SB_PROBE.get_video_dimensions(full_movie_path)
-        log(0, f"Media Dimensions : {media_dimensions}")
-        resolution = media_dimensions[0] / 1.77777
-        resolution = int(resolution)
-        detailed_name = f"{base_name}.{resolution}"
-        log(0, f"Detailed Name : {detailed_name}")
+        if get_resolution:
+            media_dimensions = SB_PROBE.get_video_dimensions(video_path)
+            resolution = media_dimensions[0] / 1.77777
+            resolution = int(resolution)
+
+            log(0, f"Resolution : {media_dimensions}")
+            details.append(f".{resolution}")
 
         # Add HDR status
-        dynamic_resolution = SB_VIDEO.video_hdr_check(full_movie_path)
-        if dynamic_resolution == True:
-            detailed_name = f"{detailed_name}.HDR"
-        else:
-            detailed_name = f"{detailed_name}.SDR"
-        log(0, f"Detailed Name : {detailed_name}")
+        if get_dynamic_range:
+            dynamic_resolution = SB_VIDEO.video_hdr_check(video_path)
+            if dynamic_resolution == True:
+                log(0, f"HDR")
+                details.append(f".HDR")
+            else:
+                log(0, f"SDR")
+                details.append(f".SDR")
 
-        # Add the bitrate
-        bitrate = SB_VIDEO.get_video_bitrate_ffmpeg(full_movie_path)
-        mbps = SB_VIDEO.convert_bitrate_to_mbps(bitrate)
-        detailed_name = f"{detailed_name}.{str(mbps).replace('.', ',')}Mbps"
-        log(0, f"Detailed Name : {detailed_name}")
+        # Add the video bitrate
+        if get_video_bitrate:
+            bitrate = SB_VIDEO.get_video_bitrate_ffmpeg(video_path)
+            mbps = SB_VIDEO.convert_bitrate_to_mbps(bitrate)
+            log(0, f"Bitrate : {bitrate}Mbps")
+            mbps = str(mbps).replace(".", ",")
+            details.append(f".{mbps}Mbps")
+
+        # Add the audio bitrate
+        if get_audio_bitrate:
+            log(2, f"GET_AUDIO_BITRATE NOT YET SUPPORTED")
+
+        # Add the audio codec
+        if get_audio_codec:
+            log(2, f"GET_AUDIO_CODEC NOT YET SUPPORTED")
+
+        # Add the video framerate
+        if get_video_framerate:
+            log(2, f"GET_VIDEO_FRAMERATE NOT YET SUPPORTED")
+
+        # Get the video colorspace
+        if get_video_colorspace:
+            log(2, f"GET_VIDEO_COLORSPACE NOT YET SUPPORTED")
+
+        # If we want to add any details to the end of our file names, add them
+        if details:
+            for detail in details:
+                parsed_video_name = f"{parsed_video_name}{detail}"
 
         # Add extension back in
-        final_name = f"{detailed_name}{movie_extension}"
-        log(0, f"Add extension : {final_name}")
+        parsed_video_name = f"{parsed_video_name}{movie_extension}"
+        log(0, f"Add extension : {parsed_video_name}")
 
-        SB_FILES.rename_files(full_movie_path, f"{folder_name}\\{final_name}")
+        # SB_FILES.rename_files(full_movie_path, f"{folder_name}\\{final_name}")
 
-        return base_name, detailed_name, final_name
+        return parsed_video_name
 
     def fix_base_show_name():
         pass
@@ -112,10 +204,13 @@ class SB_FILES:
 
     # Get a list of years from the first movie ever released to the current year
     def create_list_of_years():
+        log(1, f"Creating list of years from 1888 - {datetime.now().year}")
         current_year = datetime.now().year
         years_list = []
 
-        for i in range(1888, current_year):
+        # current_year + 1
+
+        for i in range(1888, 2100):
             years_list.append(i)
 
         return years_list
@@ -149,6 +244,8 @@ class SB_FILES:
 
     def find_video_year_from_name(video_name):
         years = SB_FILES.create_list_of_years()
+
+        log(1, f"Finding year for : {video_name}")
 
         # Find the year as long as it doesn't equal 1080 or 2160
         for i in years:
@@ -220,7 +317,7 @@ class SB_FILES:
         SB_FILES.rename_files(file_path, new_name)
 
     def get_files_in_directory(directory):
-        log(1, f"Getting all folders in directory: {directory}...")
+        log(1, f"Getting all files in directory: {directory}...")
         file_names = os.listdir(directory)
         log(2, f"{file_names}")
 
