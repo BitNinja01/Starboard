@@ -86,7 +86,7 @@ class SB_Main_Window(QWidget):
 
             # Create a button to scan the input directory and generate the form
             self.generate_button = QPushButton("Update Names")
-            # self.generate_button.clicked.connect(self.generate_file_list)
+            self.generate_button.clicked.connect(self.generate_file_list)
             self.group_box_layout_04.addWidget(self.generate_button)
 
             # Create a button to rename all the scanned files
