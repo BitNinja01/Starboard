@@ -6,6 +6,7 @@ import json
 import ffmpeg
 from datetime import datetime
 import shutil
+import imdb
 
 # Initialize logging
 zazzle.ZZ_Init.configure_logger(file_name="starboard")
@@ -73,53 +74,60 @@ class SB_FILES:
 
     def parse_video_name(video_path, parsed_movie_name=None, get_resolution=False, get_video_bitrate=False,
                          get_audio_codec=False, get_dynamic_range=False, get_video_framerate=False,
-                         get_video_colorspace=False):
+                         get_video_colorspace=False, get_imdb_id=False):
+
+        metadata = SB_PROBE.get_video_metadata(video_path)
+        log(0, f"Metadata : {metadata}")
 
         # Get the movie extension
         movie_extension = video_path[-4:]
         log(0, f"Extension : {movie_extension}")
 
         # If we didn't pass a parsed movie name, then we need to parse it from the file path
-        if parsed_movie_name == None:
-            file_name = video_path.rpartition("\\")[-1]
-            folder_name = video_path.rpartition("\\")[0]
-            log(0, f"Folder: {folder_name}")
-            log(0, f"Movie : {file_name}")
+        file_name = video_path.rpartition("\\")[-1]
+        folder_name = video_path.rpartition("\\")[0]
+        log(0, f"Folder: {folder_name}")
+        log(0, f"Movie : {file_name}")
 
-            # Get the year of the movie from it's file name
-            movie_year = SB_FILES.find_video_year_from_name(file_name)
-            log(0, f"Year : {movie_year}")
+        # Figure out if the video is a special edition or whatever
+        edition = SB_FILES.detect_special_edition(file_name)
 
-            # Get the front of our string
-            name_front = file_name.rpartition(str(movie_year))[0]
-            log(0, f"Name Front : {name_front}")
+        # Get the year of the movie from it's file name
+        movie_year = SB_FILES.find_video_year_from_name(file_name)
+        log(0, f"Year : {movie_year}")
 
-            # Get the back of our string
-            name_back = file_name.rpartition(str(movie_year))[1]
-            log(0, f"Name Back : {name_back}")
+        # Get the front of our string
+        name_front = file_name.rpartition(str(movie_year))[0]
+        log(0, f"Name Front : {name_front}")
 
-            # Combine the front and back
-            base_name = f"{name_front}{name_back}"
-            log(0, f"Front + Back : {base_name}")
+        # Get the back of our string
+        name_back = file_name.rpartition(str(movie_year))[1]
+        log(0, f"Name Back : {name_back}")
 
-            # Replace any periods with spaces
-            base_name = base_name.replace(".", " ")
-            log(0, f"Replaced '.' : {base_name}")
+        # Combine the front and back
+        base_name = f"{name_front}{name_back}"
+        log(0, f"Front + Back : {base_name}")
 
+        # Replace any periods with spaces
+        base_name = base_name.replace(".", " ")
+        log(0, f"Replaced '.' : {base_name}")
+
+        if " vs " in base_name:
             # Fix any 'vs' in our title
             base_name = base_name.replace(" vs ", " vs.")
             log(0, f"VS fix : {base_name}")
 
-            # Remove and re-add the () to the year
-            base_name = base_name.replace("(", "")
-            base_name = base_name.replace(")", "")
-            base_name = base_name.replace(str(movie_year), f"({str(movie_year)})")
-            log(0, f"Fix () : {base_name}")
-            parsed_video_name = base_name
+        # Remove and re-add the () to the year
+        base_name = base_name.replace("(", "")
+        base_name = base_name.replace(")", "")
+        base_name = base_name.replace(str(movie_year), f"({str(movie_year)})")
+        log(0, f"Fix () : {base_name}")
+        parsed_video_name = base_name
 
-        # Use the parsed movie name as the base name for the video we're working on
-        else:
-            parsed_video_name = parsed_movie_name
+        # Get the IMDB ID
+        if get_imdb_id:
+            imdb_tag = SB_IMDB.imdb_get_id_from_title(parsed_video_name)
+            log(0, f"IMDB ID : {id}")
 
         # Make a list of details to add to the video name
         details = []
@@ -170,13 +178,53 @@ class SB_FILES:
             for detail in details:
                 parsed_video_name = f"{parsed_video_name}{detail}"
 
+        # Add IMDB tag to name
+        if get_imdb_id:
+            parsed_video_name = parsed_video_name + " {imdb -" + imdb_tag + "}"
+
+        # If we detected an edition, add it to the end before the extension
+        if edition:
+            edition = edition.title()
+            parsed_video_name = parsed_video_name + " {edition-" + edition + "}"
+
         # Add extension back in
         parsed_video_name = f"{parsed_video_name}{movie_extension}"
         log(0, f"Add extension : {parsed_video_name}")
 
-        # SB_FILES.rename_files(full_movie_path, f"{folder_name}\\{final_name}")
-
         return parsed_video_name
+
+    def detect_special_edition(file_name):
+
+        log(1, f"Looking for editions for {file_name}")
+
+        # Convert name to lowercase and get rid of punctuation for easier checks
+        file_name = file_name.lower()
+        file_name = file_name.replace("_", " ").replace(".", " ").replace("'", "").replace(":", " ").replace(";", " ")
+
+        # Special edition keywords
+        normalized_keywords = {
+            "directors": ["directors", "directors cut", "directorscut"],
+            "extended": ["extended", "extendededition"],
+            "remastered": ["remastered", "redux", "remaster"],
+            "special edition": ["special edition", "deluxe", "specialedition", "collectorsedition", "collectors "
+                                                                                                    "edition"]
+        }
+
+        # Figure out what special edition we've got
+        editions = []
+        for keyword, variations in normalized_keywords.items():
+            for variation in variations:
+                if variation in file_name:
+                    editions.append(keyword)
+
+        if len(editions) > 1:
+            log(2, f"{len(editions)} editions detected in {file_name}")
+            log(0, f"Using first edition : {editions[0]}")
+        elif len(editions) == 1:
+            log(1, f"1 edition detected : {editions[0]}")
+            return editions[0]
+        else:
+            return None
 
     # Get a list of years from the first movie ever released to the current year
     def create_list_of_years():
@@ -499,6 +547,48 @@ class SB_PROBE:
             print(f"Error: {e}")
             return None
 
+    def get_video_metadata(file_path):
+        try:
+            if not os.path.exists(file_path):
+                log(3, f"Error: File not found at {file_path}")
+                return None
+
+            # Run ffprobe to extract tags
+            result = subprocess.run(
+                ['ffprobe', '-v', 'error', '-show_entries', 'format=tags', '-of', 'json', file_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            # Parse the JSON output
+            metadata = json.loads(result.stdout)
+            if 'format' in metadata and 'tags' in metadata['format']:
+                return metadata['format']['tags']
+            else:
+                log(3, "No tags found in the file.")
+                return None
+        except:
+            log(4, f"CRITICAL ERROR")
+            return None
+
+class SB_IMDB:
+    def imdb_get_id_from_title(title):
+        ia = imdb.Cinemagoer()
+        movies = ia.search_movie(title)
+        if movies:
+            movie = movies[0]  # Get the first result
+            log(0, f"Movie ID : {movie.movieID}")
+            return movie.movieID
+        else:
+            log(3, f"No results found for '{title}'")
+        return None
+
+    def imdb_get_year_from_id(id):
+        pass
+
+    def imdb_get_description_from_id(id):
+        pass
 
 class SB_VIDEO:
     def create_optimized_video_sdr_to_sdr(input_file, target_bitrate, bitrate_buffer):
