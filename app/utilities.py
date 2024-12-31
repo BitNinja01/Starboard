@@ -151,7 +151,7 @@ class SB_FILES:
 
         if details:
             for detail in details:
-                parsed_video_name = f"{parsed_movie_name}{detail}"
+                parsed_video_name = f"{parsed_video_name}{detail}"
 
         # Add extension back in
         parsed_video_name = f"{parsed_video_name}{movie_extension}"
