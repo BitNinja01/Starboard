@@ -1,7 +1,4 @@
-import os, sys
 import zazzle
-from tqdm import tqdm
-import shutil
 from utilities import SB_ASCII, SB_FILES, SB_VIDEO, SB_PROBE, log
 from gui import SB_Main_Window
 from PyQt6.QtWidgets import QApplication
