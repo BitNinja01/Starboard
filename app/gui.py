@@ -3,12 +3,74 @@ import os.path
 from PyQt6.QtWidgets import (QApplication, QGridLayout, QVBoxLayout, QFormLayout, QWidget, QPushButton, QLabel,
                              QLineEdit,
                              QCheckBox, QSpinBox, QComboBox, QSpacerItem, QSizePolicy, QGroupBox, QHBoxLayout,
-                             QFileDialog, QListWidget, QRadioButton)
+                             QFileDialog, QListWidget, QRadioButton, QProgressBar, QDialog)
 from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from utilities import SB_EXECUTE, SB_FILES
 import zazzle
+import time
 
 log = zazzle.ZZ_Logging.log
+
+class FileListWorker(QThread):
+    progress_updated = pyqtSignal(int)
+    task_finished = pyqtSignal()
+
+    def __init__(self, gui_instance):
+        super().__init__()
+        self.gui_instance = gui_instance
+
+    def run(self):
+        self.gui_instance.generate_file_list(progress_callback=self.update_progress)
+        self.task_finished.emit()
+
+    def update_progress(self, value):
+        self.progress_updated.emit(value)
+
+class PopupDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Generating File List")
+        self.resize(300, 100)
+        self.setModal(True)
+
+        # Layout and widgets
+        layout = QVBoxLayout()
+        self.label = QLabel("Processing...")
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(0)
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.progress_bar)
+        self.setLayout(layout)
+
+    def update_progress(self, value):
+        # Update progress bar
+        self.progress_bar.setValue(value)
+
+    def task_finished(self):
+        # Update label when task is complete
+        self.label.setText("Task Complete!")
+        self.thread.quit()
+        self.thread.wait()
+
+        # Close the popup
+        self.close()
+
+    def center_on_screen(self):
+        # Get the screen geometry
+        screen_geometry = QApplication.primaryScreen().geometry()
+        screen_width = screen_geometry.width()
+        screen_height = screen_geometry.height()
+
+        # Calculate the center point
+        popup_width = self.width()
+        popup_height = self.height()
+        x = (screen_width - popup_width) // 2
+        y = (screen_height - popup_height) // 2
+
+        # Move the popup to the center
+        self.move(x, y)
 
 class SB_Main_Window(QWidget):
     def __init__(self):
@@ -89,6 +151,7 @@ class SB_Main_Window(QWidget):
             # Create a button to scan the input directory and generate the form
             self.generate_button = QPushButton("Update Names")
             self.generate_button.clicked.connect(self.generate_file_list)
+            self.generate_button.clicked.connect(self.open_popup)
             self.group_box_layout_04.addWidget(self.generate_button)
 
             # Create a button to rename all the scanned files
@@ -115,7 +178,21 @@ class SB_Main_Window(QWidget):
         except:
             log(4, f"CRITICAL GUI ERROR")
 
-    def generate_file_list(self):
+    def open_popup(self):
+        # Create the popup
+        self.progress_popup = PopupDialog()
+
+        # Create the worker thread
+        self.worker = FileListWorker(self)
+        self.worker.progress_updated.connect(self.progress_popup.progress_bar.setValue)
+        self.worker.task_finished.connect(self.progress_popup.close)
+        self.worker.task_finished.connect(self.cleanup_popup)
+
+        # Start the worker thread and show the popup
+        self.worker.start()
+        self.progress_popup.exec()
+
+    def generate_file_list(self, progress_callback=None):
         try:
             log(1, f"Generating file list...")
             self.list_widget_a.clear()
@@ -130,6 +207,10 @@ class SB_Main_Window(QWidget):
                 log(3, "No movie folders found.")
                 return
 
+            # Handle progress bar updates
+            total_movies = len(movie_folders)
+            current_progress = 0
+
             self.parsed_movie_folder_dict = {
                 SB_FILES.parse_movie_name(movie): movie for movie in movie_folders
             }
@@ -137,7 +218,8 @@ class SB_Main_Window(QWidget):
                 movie: {} for movie in self.parsed_movie_folder_dict
             }
 
-            for movie, path in self.parsed_movie_folder_dict.items():
+            # Get all our files in dictionaries
+            for i, (movie, path) in enumerate(self.parsed_movie_folder_dict.items()):
                 video_files = SB_FILES.get_files_in_directory(path)
                 video_files = [v for v in video_files if v.endswith(('.mkv', '.mp4'))]
 
@@ -153,6 +235,11 @@ class SB_Main_Window(QWidget):
                         get_imdb_id=self.check_imdb_id.isChecked()
                     )
                     self.parsed_video_dict[movie][parsed_video_name] = video
+
+                # Update progress
+                current_progress = int(((i + 1) / total_movies) * 100)
+                if progress_callback:
+                    progress_callback(current_progress)
 
             if not self.parsed_movie_folder_dict:
                 log(3, "No parsed movie folders to display.")
@@ -186,12 +273,27 @@ class SB_Main_Window(QWidget):
         log(1, f"RENAME FILES")
 
     def select_directory(self):
-        # Open file dialog
-        self.directory_path = QFileDialog.getExistingDirectory(self, "Select Directory", "")
-        if self.directory_path:
-            # Update the label with the selected file path
-            self.directory_label.setText(f"{self.directory_path}")
-            self.generate_file_list()
+        try:
+            # Open directory selection dialog
+            self.directory_path = QFileDialog.getExistingDirectory(self, "Select Directory", "")
+
+            # Check if a directory was selected
+            if self.directory_path:
+                log(1, f"Selected directory: {self.directory_path}")
+                self.directory_label.setText(f"{self.directory_path}")
+
+                # Proceed to open the progress popup
+                self.open_popup()
+            else:
+                log(3, "No directory selected.")
+
+        except Exception as e:
+            log(4, f"Error selecting directory: {e}")
+
+    def cleanup_popup(self):
+        log(1, "Popup closed and task finished.")
+        self.progress_popup = None  # Clear popup reference
+        self.worker = None  # Clear worker reference
 
     def modern_stylesheet(app: QApplication):
         """
