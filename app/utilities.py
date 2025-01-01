@@ -1,5 +1,4 @@
 import os
-from pyfiglet import Figlet
 import zazzle
 import subprocess
 import json
@@ -22,11 +21,6 @@ class SB_EXECUTE:
 
         log(2, f"{movie_folders}")
         return movie_folders
-
-class SB_ASCII:
-    def print_intro_consol_blurb(text, font):
-        font = Figlet(font=f"{font}")
-        log(1, font.renderText(f"{text}"), flag=False)
 
 class SB_FILES:
 

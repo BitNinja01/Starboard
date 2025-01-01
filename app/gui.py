@@ -34,6 +34,9 @@ class PopupDialog(QDialog):
         self.resize(300, 100)
         self.setModal(True)
 
+        # Set the window icon
+        self.setWindowIcon(QIcon("img/anchor.svg"))
+
         # Layout and widgets
         layout = QVBoxLayout()
         self.label = QLabel("Processing...")
@@ -269,7 +272,57 @@ class SB_Main_Window(QWidget):
         self.list_widget_b.setCurrentRow(0)
 
     def rename_files(self):
-        log(1, f"RENAME FILES")
+        log(1, f"Renaming selected files")
+
+        # Rename all the videos
+        for index in range(self.list_widget_b.count()):
+            log(0, f"Waling through list items")
+            list_b_item = self.list_widget_b.item(index)
+            video = list_b_item.text()
+            log(0, f"video : {video}")
+
+            # Get the old and new path for the current video
+            current_movie = self.list_widget_a.currentItem().text()
+            old_video_path = self.parsed_video_dict[current_movie][video]
+            log(0, f"old_video_path : {self.parsed_video_dict[current_movie][video]}")
+            new_video_path = old_video_path.rpartition("\\")[0]
+            log(0, f"new_video_path : {new_video_path}")
+            new_video_path = f"{new_video_path}\\{video}"
+            log(0, f"new_video_path : {new_video_path}")
+
+            SB_FILES.rename_files(old_video_path, new_video_path)
+
+        # Rename the movie folder
+        current_movie = self.list_widget_a.currentItem().text()
+        log(0, f"current_movie : {current_movie}")
+        old_folder_name = self.parsed_movie_folder_dict[current_movie]
+        log(0, f"old_folder_name : {old_folder_name}")
+        new_folder_name = old_folder_name.rpartition("\\")[0]
+        log(0, f"new_folder_name : {new_folder_name}")
+        new_folder_name = f"{new_folder_name}\\{current_movie}"
+        log(0, f"new_folder_name : {new_folder_name}")
+
+        SB_FILES.rename_files(old_folder_name, new_folder_name)
+
+        log(0, f"Clear widget_list_b")
+        # Remove all items from widget_list_b
+        self.list_widget_b.clear()
+
+        # Remove the active item from widget_list_a
+        current_row = self.list_widget_a.currentRow()
+        if current_row != -1:
+            item = self.list_widget_a.takeItem(current_row)
+        else:
+            print("No item selected to remove.")
+
+        # Delete the item from memory
+        del item
+
+        # Clear selection to prevent errors
+        self.list_widget_a.clearSelection()
+
+        # Make index 1 active
+        self.list_widget_a.setCurrentRow(0)
 
     def select_directory(self):
         try:
