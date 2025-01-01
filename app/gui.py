@@ -96,8 +96,13 @@ class SB_Main_Window(QWidget):
             self.select_directory_button.clicked.connect(self.select_directory)
             self.directory_label = QLabel("Selected file path will appear here")
 
+            # Create a button to scan the input directory and generate the form
+            self.generate_button = QPushButton("Refresh")
+            self.generate_button.clicked.connect(self.open_popup)
+
             # Add widgets to layout
             self.group_box_layout_01.addWidget(self.directory_label, stretch=1)
+            self.group_box_layout_01.addWidget(self.generate_button)
             self.group_box_layout_01.addWidget(self.select_directory_button)
 
             # Make Renaming section ====================================================================================
@@ -151,15 +156,16 @@ class SB_Main_Window(QWidget):
             self.group_box_04 = QGroupBox("Actions")
             self.group_box_layout_04 = QHBoxLayout()
 
-            # Create a button to scan the input directory and generate the form
-            self.generate_button = QPushButton("Update Names")
-            self.generate_button.clicked.connect(self.open_popup)
-            self.group_box_layout_04.addWidget(self.generate_button)
-
             # Create a button to rename all the scanned files
-            self.generate_button = QPushButton("Rename")
-            self.generate_button.clicked.connect(self.rename_files)
-            self.group_box_layout_04.addWidget(self.generate_button)
+            self.rename = QPushButton("Rename")
+            self.rename.clicked.connect(self.rename_files)
+
+            self.rename_all_button = QPushButton("Rename All")
+            self.rename_all_button.clicked.connect(self.rename_all_files)
+
+            # Add the buttons to the layout
+            self.group_box_layout_04.addWidget(self.rename)
+            self.group_box_layout_04.addWidget(self.rename_all_button)
 
             # Set the group box layouts ================================================================================
             self.group_box_01.setLayout(self.group_box_layout_01)
@@ -323,6 +329,10 @@ class SB_Main_Window(QWidget):
 
         # Make index 1 active
         self.list_widget_a.setCurrentRow(0)
+
+    def rename_all_files(self):
+        for index in range(self.list_widget_a.count()):
+            self.rename_files()
 
     def select_directory(self):
         try:
