@@ -1,5 +1,4 @@
 import os.path
-
 from PyQt6.QtWidgets import (QApplication, QGridLayout, QVBoxLayout, QFormLayout, QWidget, QPushButton, QLabel,
                              QLineEdit,
                              QCheckBox, QSpinBox, QComboBox, QSpacerItem, QSizePolicy, QGroupBox, QHBoxLayout,
