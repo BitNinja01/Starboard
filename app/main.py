@@ -1,5 +1,4 @@
 import zazzle
-from utilities import SB_ASCII, SB_FILES, SB_VIDEO, SB_PROBE, log
 from gui import SB_Main_Window
 from PyQt6.QtWidgets import QApplication
 
@@ -9,10 +8,6 @@ log = zazzle.ZZ_Logging.log
 
 if __name__ == "__main__":
     try:
-        # Console blurb because go big or go home amirite
-        SB_ASCII.print_intro_consol_blurb(text="STARBOARD", font="doom")
-        print()
-
         log(1, f"Creating application...")
         # Step 2: Create the application object
         app = QApplication([])
