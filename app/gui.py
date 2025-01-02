@@ -119,6 +119,7 @@ class SB_Main_Window(QWidget):
             # Create the layout for the "Movies" tab ===================================================================
             self.movies_tab_layout = QVBoxLayout()
             self.movies_center_layout = QGridLayout()
+
             self.group_box_02_a = QGroupBox("Folders")
             self.group_box_02_b = QGroupBox("Files")
             self.group_box_02_c = QGroupBox("Settings")
@@ -126,12 +127,12 @@ class SB_Main_Window(QWidget):
             self.group_box_layout_02_b = QVBoxLayout()
             self.group_box_layout_02_c = QHBoxLayout()
 
-            # Create a QListWidget for folders and files
+            # Create list widgets
             self.list_widget_a = QListWidget()
             self.list_widget_a.currentItemChanged.connect(self.update_widget_b_items)
             self.list_widget_b = QListWidget()
 
-            # Add the list widgets to their respective group boxes
+            # Add list widgets to their respective group boxes
             self.group_box_layout_02_a.addWidget(self.list_widget_a)
             self.group_box_layout_02_b.addWidget(self.list_widget_b)
             self.group_box_02_a.setLayout(self.group_box_layout_02_a)
@@ -154,14 +155,61 @@ class SB_Main_Window(QWidget):
             self.group_box_layout_02_c.addWidget(self.check_imdb_id)
             self.group_box_02_c.setLayout(self.group_box_layout_02_c)
 
-            # Layout grid items
+            # Layout grid items for Movies tab
             self.movies_center_layout.addWidget(self.group_box_02_a, 0, 0, 10, 1)
             self.movies_center_layout.addWidget(self.group_box_02_c, 0, 1, 1, 1)
             self.movies_center_layout.addWidget(self.group_box_02_b, 1, 1, 9, 1)
 
-            # Add the grid layout to the movies tab layout
+            # Add the grid layout to the Movies tab
             self.movies_tab_layout.addLayout(self.movies_center_layout)
             self.movies_tab.setLayout(self.movies_tab_layout)
+
+            # Create the layout for the "TV Shows" tab ================================================================
+            self.tv_shows_tab_layout = QVBoxLayout()
+            self.tv_shows_center_layout = QGridLayout()
+
+            self.group_box_03_a = QGroupBox("Folders")
+            self.group_box_03_b = QGroupBox("Seasons")
+            self.group_box_03_d = QGroupBox("Settings")
+            self.group_box_03_c = QGroupBox("Files")
+            self.group_box_layout_03_a = QVBoxLayout()
+            self.group_box_layout_03_b = QVBoxLayout()
+            self.group_box_layout_03_d = QHBoxLayout()
+            self.group_box_layout_03_c = QVBoxLayout()
+
+            # Create list widgets for TV Shows
+            self.list_widget_c = QListWidget()  # Folders
+            self.list_widget_d = QListWidget()  # Seasons
+            self.list_widget_e = QListWidget()  # Files
+
+            # Add list widgets to their respective group boxes
+            self.group_box_layout_03_a.addWidget(self.list_widget_c)
+            self.group_box_layout_03_b.addWidget(self.list_widget_d)
+            self.group_box_layout_03_c.addWidget(self.list_widget_e)
+
+            self.group_box_03_a.setLayout(self.group_box_layout_03_a)
+            self.group_box_03_b.setLayout(self.group_box_layout_03_b)
+            self.group_box_03_c.setLayout(self.group_box_layout_03_c)
+
+            # Add checkboxes for TV Shows settings
+            self.group_box_layout_03_d.addWidget(QCheckBox("Resolution"))
+            self.group_box_layout_03_d.addWidget(QCheckBox("Dynamic Range"))
+            self.group_box_layout_03_d.addWidget(QCheckBox("Video Bitrate"))
+            self.group_box_layout_03_d.addWidget(QCheckBox("Audio Codec"))
+            self.group_box_layout_03_d.addWidget(QCheckBox("Framerate"))
+            self.group_box_layout_03_d.addWidget(QCheckBox("Colorspace"))
+            self.group_box_layout_03_d.addWidget(QCheckBox("IMDB ID"))
+            self.group_box_03_d.setLayout(self.group_box_layout_03_d)
+
+            # Layout grid items for TV Shows tab
+            self.tv_shows_center_layout.addWidget(self.group_box_03_a, 0, 0, 10, 1)  # Folders
+            self.tv_shows_center_layout.addWidget(self.group_box_03_b, 0, 1, 10, 1)  # Seasons
+            self.tv_shows_center_layout.addWidget(self.group_box_03_d, 0, 2, 1, 1)  # Settings
+            self.tv_shows_center_layout.addWidget(self.group_box_03_c, 1, 2, 9, 1)  # Files (below Settings)
+
+            # Add the grid layout to the TV Shows tab
+            self.tv_shows_tab_layout.addLayout(self.tv_shows_center_layout)
+            self.tv_shows_tab.setLayout(self.tv_shows_tab_layout)
 
             # Add the tabs widget to the main layout ==================================================================
             self.layout.addWidget(self.renaming_tabs)
@@ -192,6 +240,9 @@ class SB_Main_Window(QWidget):
 
         except Exception as e:
             log(4, f"CRITICAL GUI ERROR: {e}")
+
+
+
 
     def create_movies_tab(self):
         # Tab for Movies
