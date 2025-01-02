@@ -241,43 +241,6 @@ class SB_Main_Window(QWidget):
         except Exception as e:
             log(4, f"CRITICAL GUI ERROR: {e}")
 
-
-
-
-    def create_movies_tab(self):
-        # Tab for Movies
-        tab = QWidget()
-        layout = QVBoxLayout()
-
-        # List widget for movie folders
-        self.movies_list_widget = QListWidget()
-        layout.addWidget(QLabel("Movies"))
-        layout.addWidget(self.movies_list_widget)
-
-        # Additional controls for movies (e.g., checkboxes, buttons, etc.)
-        self.movie_options = QCheckBox("Include Subtitles")
-        layout.addWidget(self.movie_options)
-
-        tab.setLayout(layout)
-        return tab
-
-    def create_tv_shows_tab(self):
-        # Tab for TV Shows
-        tab = QWidget()
-        layout = QVBoxLayout()
-
-        # List widget for TV show folders
-        self.tv_shows_list_widget = QListWidget()
-        layout.addWidget(QLabel("TV Shows"))
-        layout.addWidget(self.tv_shows_list_widget)
-
-        # Additional controls for TV shows (e.g., checkboxes, buttons, etc.)
-        self.tv_show_options = QCheckBox("Include Episode Numbers")
-        layout.addWidget(self.tv_show_options)
-
-        tab.setLayout(layout)
-        return tab
-
     def open_popup(self):
         # Create the popup
         self.progress_popup = PopupDialog()
