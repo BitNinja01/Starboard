@@ -5,7 +5,7 @@ import ctypes
 
 # Make the app icon actually show up in the taskbar
 # https://stackoverflow.com/questions/1551605/how-to-set-applications-taskbar-icon-in-windows-7/1552105#1552105
-myappid = 'mycompany.myproduct.subproduct.version' # arbitrary string
+myappid = 'starboard' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 # Initialize logging

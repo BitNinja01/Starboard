@@ -294,42 +294,6 @@ class SB_FILES:
                 shutil.move(os.path.join(old_name, item), new_name)  # Move contents
             os.rmdir(old_name)  # Remove old folder
 
-    def get_unlabeled_videos(video_list):
-        log(1, f"Getting unlabeled videos...")
-        videos_not_labeled = []
-        for video in video_list:
-            # fix any borked names
-            if "NoneMbps" in video:
-                SB_FILES.rename_files(video, video.replace("NoneMbps.", ""))
-
-            # Find the videos already named
-            end_of_file = video[-13:]
-            if "Mbps" in end_of_file:
-                log(0, f"Namespace already in: {video}")
-            else:
-                videos_not_labeled.append(video)
-
-        for video in videos_not_labeled:
-            log(0, f"{video}")
-
-        return(videos_not_labeled)
-
-    def add_bitrate_to_namespace(file_path):
-        log(1, f"Adding namespace to {file_path}")
-
-        log(0, f"Getting bitrate...")
-        bitrate = SB_PROBE.get_video_bitrate(file_path)
-        mbps = SB_PROBE.convert_bitrate_to_mbps(bitrate_bps=bitrate)
-        log(0, f"Bitrate: {mbps}")
-
-        extension = file_path[-4:]
-        new_front = file_path.replace(extension, "")
-        mbps = str(mbps).replace(".", ",")
-        mbps = f".{mbps}Mbps"
-        new_name = f"{new_front}{mbps}{extension}"
-
-        SB_FILES.rename_files(file_path, new_name)
-
     def get_files_in_directory(directory):
         log(1, f"Getting all files in directory: {directory}...")
         file_names = os.listdir(directory)
@@ -344,17 +308,6 @@ class SB_FILES:
             log(0, f"{path}")
 
         return file_paths
-
-    def get_all_files_recursively(directory):
-        all_files = []
-        for entry in os.listdir(directory):
-            full_path = os.path.join(directory, entry)
-            if os.path.isdir(full_path):
-                # Recur for subdirectories
-                all_files.extend(SB_FILES.get_all_files_recursively(full_path))
-            elif os.path.isfile(full_path):
-                all_files.append(full_path)
-        return all_files
 
     def find_video_files_in_directory(directory):
         log(1, f"Getting all video files in directory: {directory}")
@@ -468,23 +421,6 @@ class SB_PROBE:
         except Exception as e:
             print(f"Error: {e}")
             return False
-
-    def get_audio_bitrate(file_path):
-        try:
-            # Run ffprobe to get audio bitrate
-            result = subprocess.run(
-                ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries',
-                 'stream=bit_rate', '-of', 'json', file_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            # Parse the JSON output
-            metadata = json.loads(result.stdout)
-            return int(metadata['streams'][0]['bit_rate']) if metadata.get('streams') else None
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
 
     def get_audio_codec(file_path):
         try:

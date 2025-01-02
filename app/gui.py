@@ -218,15 +218,21 @@ class SB_Main_Window(QWidget):
             self.group_box_04 = QGroupBox("Actions")
             self.group_box_layout_04 = QHBoxLayout()
 
-            # Create a button to rename all the scanned files
-            self.rename = QPushButton("Rename")
-            self.rename.clicked.connect(self.rename_files)
+            # Structure the currently selected directory
+            self.structure_directory_button = QPushButton("Structure")
+            self.structure_directory_button.clicked.connect(self.structure_directory)
 
+            # Rename the current folder selection
+            self.rename_button = QPushButton("Rename")
+            self.rename_button.clicked.connect(self.rename_files)
+
+            # Rename everything currently scanned
             self.rename_all_button = QPushButton("Rename All")
             self.rename_all_button.clicked.connect(self.rename_all_files)
 
             # Add the buttons to the layout
-            self.group_box_layout_04.addWidget(self.rename)
+            self.group_box_layout_04.addWidget(self.structure_directory_button)
+            self.group_box_layout_04.addWidget(self.rename_button)
             self.group_box_layout_04.addWidget(self.rename_all_button)
 
             self.group_box_04.setLayout(self.group_box_layout_04)
@@ -240,6 +246,9 @@ class SB_Main_Window(QWidget):
 
         except Exception as e:
             log(4, f"CRITICAL GUI ERROR: {e}")
+
+    def structure_directory(self):
+        log(1, f"STRUCTURE DIRECTORY")
 
     def open_popup(self):
         # Create the popup
