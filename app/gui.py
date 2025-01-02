@@ -1,8 +1,7 @@
 import os.path
 from PyQt6.QtWidgets import (QApplication, QGridLayout, QVBoxLayout, QFormLayout, QWidget, QPushButton, QLabel,
-                             QLineEdit,
-                             QCheckBox, QSpinBox, QComboBox, QSpacerItem, QSizePolicy, QGroupBox, QHBoxLayout,
-                             QFileDialog, QListWidget, QRadioButton, QProgressBar, QDialog)
+                             QLineEdit, QCheckBox, QGroupBox, QHBoxLayout, QFileDialog, QListWidget, QProgressBar,
+                             QDialog, QTabWidget)
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from utilities import SB_EXECUTE, SB_FILES
@@ -104,38 +103,41 @@ class SB_Main_Window(QWidget):
             self.group_box_layout_01.addWidget(self.generate_button)
             self.group_box_layout_01.addWidget(self.select_directory_button)
 
-            # Make Renaming section ====================================================================================
-            self.movie_folders = []
-            self.video_files = []
-            self.center_layout = QGridLayout()
+            # Add group box to the main layout
+            self.group_box_01.setLayout(self.group_box_layout_01)
+            self.layout.addWidget(self.group_box_01)
+
+            # Add a tab widget for "Movies" and "TV Shows" =============================================================
+            self.renaming_tabs = QTabWidget()
+            self.movies_tab = QWidget()
+            self.tv_shows_tab = QWidget()
+
+            # Add tabs to the tab widget
+            self.renaming_tabs.addTab(self.movies_tab, "Movies")
+            self.renaming_tabs.addTab(self.tv_shows_tab, "TV Shows")
+
+            # Create the layout for the "Movies" tab ===================================================================
+            self.movies_tab_layout = QVBoxLayout()
+            self.movies_center_layout = QGridLayout()
             self.group_box_02_a = QGroupBox("Folders")
             self.group_box_02_b = QGroupBox("Files")
             self.group_box_02_c = QGroupBox("Settings")
-            self.group_box_layout_02 = QHBoxLayout()
             self.group_box_layout_02_a = QVBoxLayout()
             self.group_box_layout_02_b = QVBoxLayout()
             self.group_box_layout_02_c = QHBoxLayout()
 
-            # Create a QListWidget
+            # Create a QListWidget for folders and files
             self.list_widget_a = QListWidget()
             self.list_widget_a.currentItemChanged.connect(self.update_widget_b_items)
             self.list_widget_b = QListWidget()
 
-            # Layout grid items
-            self.center_layout.addWidget(self.group_box_02_a, 0, 0, 10, 1)
-            self.center_layout.addWidget(self.group_box_02_c, 0, 1, 1, 1)
-            self.center_layout.addWidget(self.group_box_02_b, 1, 1, 9, 1)
-
-            # Set layouts of group items
-            self.group_box_02_a.setLayout(self.group_box_layout_02_a)
-            self.group_box_02_c.setLayout(self.group_box_layout_02_c)
-            self.group_box_02_b.setLayout(self.group_box_layout_02_b)
-
-            # Add lists to group items
+            # Add the list widgets to their respective group boxes
             self.group_box_layout_02_a.addWidget(self.list_widget_a)
             self.group_box_layout_02_b.addWidget(self.list_widget_b)
+            self.group_box_02_a.setLayout(self.group_box_layout_02_a)
+            self.group_box_02_b.setLayout(self.group_box_layout_02_b)
 
-            # Checkboxes
+            # Add checkboxes for settings
             self.check_resolution = QCheckBox("Resolution")
             self.check_HDR = QCheckBox("Dynamic Range")
             self.check_video_bitrate = QCheckBox("Video Bitrate")
@@ -150,8 +152,21 @@ class SB_Main_Window(QWidget):
             self.group_box_layout_02_c.addWidget(self.check_video_framerate)
             self.group_box_layout_02_c.addWidget(self.check_video_colorspace)
             self.group_box_layout_02_c.addWidget(self.check_imdb_id)
+            self.group_box_02_c.setLayout(self.group_box_layout_02_c)
 
-            # Make "Actions" box =======================================================================================
+            # Layout grid items
+            self.movies_center_layout.addWidget(self.group_box_02_a, 0, 0, 10, 1)
+            self.movies_center_layout.addWidget(self.group_box_02_c, 0, 1, 1, 1)
+            self.movies_center_layout.addWidget(self.group_box_02_b, 1, 1, 9, 1)
+
+            # Add the grid layout to the movies tab layout
+            self.movies_tab_layout.addLayout(self.movies_center_layout)
+            self.movies_tab.setLayout(self.movies_tab_layout)
+
+            # Add the tabs widget to the main layout ==================================================================
+            self.layout.addWidget(self.renaming_tabs)
+
+            # Make "Actions" box ======================================================================================
             self.group_box_04 = QGroupBox("Actions")
             self.group_box_layout_04 = QHBoxLayout()
 
@@ -166,24 +181,51 @@ class SB_Main_Window(QWidget):
             self.group_box_layout_04.addWidget(self.rename)
             self.group_box_layout_04.addWidget(self.rename_all_button)
 
-            # Set the group box layouts ================================================================================
-            self.group_box_01.setLayout(self.group_box_layout_01)
             self.group_box_04.setLayout(self.group_box_layout_04)
-
-            # Add the group box to the main layout =====================================================================
-            self.layout.addWidget(self.group_box_01)
-
-            self.layout.addLayout(self.center_layout, stretch=1)
-
             self.layout.addWidget(self.group_box_04)
 
             # Set the layout for the window ============================================================================
             self.setLayout(self.layout)
 
-            # Apply custom styles
+            # Apply the stylesheet
             self.modern_stylesheet()
-        except:
-            log(4, f"CRITICAL GUI ERROR")
+
+        except Exception as e:
+            log(4, f"CRITICAL GUI ERROR: {e}")
+
+    def create_movies_tab(self):
+        # Tab for Movies
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # List widget for movie folders
+        self.movies_list_widget = QListWidget()
+        layout.addWidget(QLabel("Movies"))
+        layout.addWidget(self.movies_list_widget)
+
+        # Additional controls for movies (e.g., checkboxes, buttons, etc.)
+        self.movie_options = QCheckBox("Include Subtitles")
+        layout.addWidget(self.movie_options)
+
+        tab.setLayout(layout)
+        return tab
+
+    def create_tv_shows_tab(self):
+        # Tab for TV Shows
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # List widget for TV show folders
+        self.tv_shows_list_widget = QListWidget()
+        layout.addWidget(QLabel("TV Shows"))
+        layout.addWidget(self.tv_shows_list_widget)
+
+        # Additional controls for TV shows (e.g., checkboxes, buttons, etc.)
+        self.tv_show_options = QCheckBox("Include Episode Numbers")
+        layout.addWidget(self.tv_show_options)
+
+        tab.setLayout(layout)
+        return tab
 
     def open_popup(self):
         # Create the popup
