@@ -520,4 +520,36 @@ class SB_Main_Window(QWidget):
             QScrollBar::handle:hover {
                 background-color: #53637d;
             }
+            QCheckBox::indicator {
+            width: 0;  /* Ensure the indicator has no size */
+            height: 0;
+            }
+            QCheckBox::indicator:checked {
+                width: 0;
+                height: 0;
+            }
+            QCheckBox::indicator {
+                display: none;  /* Completely hides the indicator */
+            }
+            QCheckBox {
+                background-color: #2a2f38;  /* Dark background */
+                border: 1px solid #3e4b61;
+                border-radius: 5px;
+                padding: 8px 16px;
+                color: #ffffff;
+                text-align: center;
+                font-size: 14px;
+                font-family: 'Segoe UI', 'Arial', sans-serif;
+            }
+            QCheckBox:hover {
+                background-color: #3e4b61;  /* Highlight on hover */
+            }
+            QCheckBox:checked {
+                background-color: #0078d4;  /* Blue background when checked */
+                color: white;
+                border: 1px solid #005bb5;
+            }
+            QCheckBox:checked:hover {
+                background-color: #005bb5;  /* Darker blue on hover when checked */
+            }
         """)
