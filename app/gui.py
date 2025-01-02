@@ -250,6 +250,10 @@ class SB_Main_Window(QWidget):
     def structure_directory(self):
         log(1, f"STRUCTURE DIRECTORY")
 
+        # Turn the rename buttons back on
+        self.rename_button.setDisabled(False)
+        self.rename_all_button.setDisabled(False)
+
     def open_popup(self):
         # Create the popup
         self.progress_popup = PopupDialog()
@@ -319,6 +323,9 @@ class SB_Main_Window(QWidget):
 
             self.list_widget_a.addItems(self.parsed_movie_folder_dict.keys())
             self.list_widget_a.setCurrentRow(0)
+
+            self.rename_button.setDisabled(True)
+            self.rename_all_button.setDisabled(True)
 
         except Exception as e:
             log(4, f"CRITICAL ERROR: {e}")
@@ -447,6 +454,9 @@ class SB_Main_Window(QWidget):
             }
             QPushButton:pressed {
                 background-color: #53637d; /* Even lighter blue when pressed */
+            }
+            QPushButton:disabled {
+                background-color: #1d232d; /* Make disabled buttons darker than the regular ones*/
             }
 
             /* Labels */
