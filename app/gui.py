@@ -92,7 +92,7 @@ class SB_Main_Window(QWidget):
             # Create the entry line for the directory path
             self.select_directory_button = QPushButton("Select Folder")
             self.select_directory_button.clicked.connect(self.select_directory)
-            self.directory_label = QLabel("Selected file path will appear here")
+            self.directory_label = QLabel("NO DIRECTORY SELECTED")
 
             # Create a button to scan the input directory and generate the form
             self.generate_button = QPushButton("Refresh")
@@ -220,7 +220,7 @@ class SB_Main_Window(QWidget):
 
             # Structure the currently selected directory
             self.structure_directory_button = QPushButton("Structure")
-            self.structure_directory_button.clicked.connect(self.structure_directory)
+            self.structure_directory_button.clicked.connect(self.fix_structure_directory)
 
             # Rename the current folder selection
             self.rename_button = QPushButton("Rename")
@@ -238,6 +238,13 @@ class SB_Main_Window(QWidget):
             self.group_box_04.setLayout(self.group_box_layout_04)
             self.layout.addWidget(self.group_box_04)
 
+            # Create a status window ===================================================================================
+            # Create a status label that we can talk to the user with
+            self.status_text = QLabel("Ready")
+
+            # Add the status to the main layout
+            self.layout.addWidget(self.status_text)
+
             # Set the layout for the window ============================================================================
             self.setLayout(self.layout)
 
@@ -246,13 +253,6 @@ class SB_Main_Window(QWidget):
 
         except Exception as e:
             log(4, f"CRITICAL GUI ERROR: {e}")
-
-    def structure_directory(self):
-        log(1, f"STRUCTURE DIRECTORY")
-
-        # Turn the rename buttons back on
-        self.rename_button.setDisabled(False)
-        self.rename_all_button.setDisabled(False)
 
     def open_popup(self):
         # Create the popup
@@ -271,64 +271,116 @@ class SB_Main_Window(QWidget):
     def generate_file_list(self, progress_callback=None):
         try:
             log(1, f"Generating file list...")
+
+            # Clear the list widgets
             self.list_widget_a.clear()
             self.list_widget_b.clear()
+            self.list_widget_c.clear()
+            self.list_widget_d.clear()
+            self.list_widget_e.clear()
 
+            # Check to make sure directory_path has a value
             if not hasattr(self, 'directory_path') or not os.path.exists(self.directory_path):
                 log(3, f"Invalid or missing directory path: {self.directory_path}")
                 return
 
-            movie_folders = SB_EXECUTE.get_movie_folders(self.directory_path)
-            if not movie_folders:
-                log(3, "No movie folders found.")
-                return
+            # Check to make sure our directory structure is valid
+            structure_is_correct = self.check_directory_structure()
 
-            # Handle progress bar updates
-            total_movies = len(movie_folders)
-            current_progress = 0
+            # If the directory structure is incorrect, disable any action buttons and warn the user
+            if structure_is_correct  == False:
+                # Disable any action buttons
+                self.rename_button.setDisabled(True)
+                self.rename_all_button.setDisabled(True)
 
-            self.parsed_movie_folder_dict = {
-                SB_FILES.parse_movie_name(movie): movie for movie in movie_folders
-            }
-            self.parsed_video_dict = {
-                movie: {} for movie in self.parsed_movie_folder_dict
-            }
+                # Warn the user
+                self.status_text.setText("Directory structure incorrect - use the 'Structure' button to attempt to "
+                                          "fix this")
 
-            # Get all our files in dictionaries
-            for i, (movie, path) in enumerate(self.parsed_movie_folder_dict.items()):
-                video_files = SB_FILES.get_files_in_directory(path)
-                video_files = [v for v in video_files if v.endswith(('.mkv', '.mp4'))]
+            # If the directory structure is already correct, then scan everything in
+            else:
+                movie_folders = SB_EXECUTE.get_movie_folders(self.directory_path)
+                if not movie_folders:
+                    log(3, "No movie folders found.")
+                    return
 
-                for video in video_files:
-                    parsed_video_name = SB_FILES.parse_video_name(
-                        video_path=video, parsed_movie_name=movie,
-                        get_resolution=self.check_resolution.isChecked(),
-                        get_video_bitrate=self.check_video_bitrate.isChecked(),
-                        get_dynamic_range=self.check_HDR.isChecked(),
-                        get_audio_codec=self.check_audio_codec.isChecked(),
-                        get_video_framerate=self.check_video_framerate.isChecked(),
-                        get_video_colorspace=self.check_video_colorspace.isChecked(),
-                        get_imdb_id=self.check_imdb_id.isChecked()
-                    )
-                    self.parsed_video_dict[movie][parsed_video_name] = video
+                # Handle progress bar updates
+                total_movies = len(movie_folders)
+                current_progress = 0
 
-                # Update progress
-                current_progress = int(((i + 1) / total_movies) * 100)
-                if progress_callback:
-                    progress_callback(current_progress)
+                self.parsed_movie_folder_dict = {
+                    SB_FILES.parse_movie_name(movie): movie for movie in movie_folders
+                }
+                self.parsed_video_dict = {
+                    movie: {} for movie in self.parsed_movie_folder_dict
+                }
 
-            if not self.parsed_movie_folder_dict:
-                log(3, "No parsed movie folders to display.")
-                return
+                # Get all our files in dictionaries
+                for i, (movie, path) in enumerate(self.parsed_movie_folder_dict.items()):
+                    video_files = SB_FILES.get_files_in_directory(path)
+                    video_files = [v for v in video_files if v.endswith(('.mkv', '.mp4'))]
 
-            self.list_widget_a.addItems(self.parsed_movie_folder_dict.keys())
-            self.list_widget_a.setCurrentRow(0)
+                    for video in video_files:
+                        parsed_video_name = SB_FILES.parse_video_name(
+                            video_path=video, parsed_movie_name=movie,
+                            get_resolution=self.check_resolution.isChecked(),
+                            get_video_bitrate=self.check_video_bitrate.isChecked(),
+                            get_dynamic_range=self.check_HDR.isChecked(),
+                            get_audio_codec=self.check_audio_codec.isChecked(),
+                            get_video_framerate=self.check_video_framerate.isChecked(),
+                            get_video_colorspace=self.check_video_colorspace.isChecked(),
+                            get_imdb_id=self.check_imdb_id.isChecked()
+                        )
+                        self.parsed_video_dict[movie][parsed_video_name] = video
 
-            self.rename_button.setDisabled(True)
-            self.rename_all_button.setDisabled(True)
+                    # Update progress
+                    current_progress = int(((i + 1) / total_movies) * 100)
+                    if progress_callback:
+                        progress_callback(current_progress)
+
+                if not self.parsed_movie_folder_dict:
+                    log(3, "No parsed movie folders to display.")
+                    return
+
+                self.list_widget_a.addItems(self.parsed_movie_folder_dict.keys())
+                self.list_widget_a.setCurrentRow(0)
+
+                self.rename_button.setDisabled(False)
+                self.rename_all_button.setDisabled(False)
+                self.status_text.setText("Ready")
 
         except Exception as e:
             log(4, f"CRITICAL ERROR: {e}")
+
+    def check_directory_structure(self):
+        # Check the directory the user input to make sure there are no loose files in it
+        log(1, f"Checking directory structure...")
+
+        # If there's video files in the main directory, then we're structured incorrectly - return False
+        movie_folders = SB_FILES.get_files_in_directory(self.directory_path)
+        main_folder_video_files = [item for item in movie_folders if item.endswith((".mkv", ".mp4"))]
+        if main_folder_video_files:
+            return False
+
+        # Check for TV Shows (check for like, 5 or more videos in one folder)
+        # Make sure each TV Show folder has at least one season folder.
+        # If not:
+            # Return False
+        # Else:
+            # Return True
+        return True
+
+    def fix_structure_directory(self):
+        log(1, f"Fixing directory structure...")
+
+        # Code to fix everything here
+
+        # Make sure we did everything correctly
+        self.check_directory_structure()
+
+        # Turn the rename buttons back on
+        self.rename_button.setDisabled(False)
+        self.rename_all_button.setDisabled(False)
 
     def update_widget_b_items(self):
         log(1, f"Active movie changed. Updating lists...")
